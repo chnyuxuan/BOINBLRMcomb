@@ -17,7 +17,9 @@
 #'                if \code{mtd.contour=TRUE}; Otherwise, a scalar specifying the total number of cohorts for
 #'                the trial.
 #' @param cohortsize the cohort size
-#' @param preferred.doses the matrix that specifies the preference of each dose combination: 1 for preferred; 0 for less preferred; -1 for excluded.
+#' @param preferred.doses the matrix that specifies the admissible dose combinations:
+#'                        \code{1} for included dose combinations and \code{-1} for excluded
+#'                        dose combinations. The starting dose must be coded as \code{1}.
 #' @param n.earlystop the early stopping parameter. If the number of patients treated at the current
 #'                    dose reaches \code{n.earlystop}, stop the trial or subtrial and select the MTD based on
 #'                    the observed data. When the waterfall design is used to find the MTD contour,
@@ -50,12 +52,11 @@
 #' otherwise, the titration is completed and we switch to cohort size = \code{cohortsize}.
 #' Titration accelerates the dose escalation and is useful when low doses are believed to be safe.
 #'
-#' When selecting the next dose in escalation/de-escalation, the dose with higher posterior
-#' probability of being in the optimal interval is selected as the next dose.
-#' When the posterior probability of the two candidate doses being in the
-#' optimal interval is equal or both candidate doses have no data, the next
-#' dose is selected according to the preference matrix. When one candidate dose
-#' has data, the other has not, the next dose is the candidate dose with no data.
+#' The dose combinations to be considered are specified by \code{preferred.doses},
+#' where dose combinations coded as \code{1} are included and dose combinations
+#' coded as \code{-1} are excluded from escalation and de-escalation. Among the
+#' admissible neighboring dose combinations, the next dose is chosen based on the
+#' posterior probability of being in the optimal interval.
 #'
 #'
 #' The BOIN-CombP design has two built-in stopping rules:
@@ -81,7 +82,7 @@
 #' @return \code{get.oc.combP()} returns the operating characteristics of the BOIN combination or
 #' waterfall design as a list. For the BOIN combination design, including:
 #' (1) true toxicity probability at each dose level (\code{$p.true}),
-#' (2) preference at each dose level (\code{$preferred.doses}),
+#' (2) admissibility indicator at each dose level (\code{$preferred.doses}),
 #' (3) selection percentage at each dose level (\code{$selpercent}),
 #' (4) the number of patients treated at each dose level (\code{$npatients})
 #' (5) the number of toxicities observed at each dose level (\code{$ntox}),
@@ -487,7 +488,7 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
       else {
         current_dose_index <- current_dose_index + 1
       }
-      cat("tested drug combination ", t, " is done.\n", sep = "")
+      # cat("tested drug combination ", t, " is done.\n", sep = "")
       t <- t + 1
     }
     cohort_final <- cohort_all[[length(cohort_all)]]
@@ -628,7 +629,9 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
           n[d[1], d[2]] = n[d[1], d[2]] + cohortsize
         }
 
-
+        # print(n)
+        # print(y)
+        # cat("current dose considered:", d, "\n")
 
         nc = n[d[1], d[2]] #the updated number of patients treated for this dose
 
@@ -681,11 +684,13 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
             d = d + c(0,1)*( preferred.doses[d[1],d[2]+1]>=0)
           }else if (d[1]<dim(p.true)[1] && d[2] == dim(p.true)[2]){ # if reach boundary in one direction
             d = d + c(1,0)*( preferred.doses[d[1]+1,d[2]]>=0)
-          }else{
+          }else if (d[1]==dim(p.true)[1] && d[2] == dim(p.true)[2]){
+            d = d
+          } else{
             elevel = matrix(c(1, 0, 0, 1), 2) # Two potential escalation directions
             pr_H0 = rep(0, length(elevel)/2) # to store probabilities for two potential dose
             nn = yn = pr_H0 # store number of patients treated at each candidate dose and number of DLT
-            prefer = rep(0, length(elevel)/2) # to store preference for two candidate dose
+            prefer = rep(-1, length(elevel)/2) # to store preference for two candidate dose
             for (i in seq(1, length(elevel)/2, by = 1)) { # check for two candidates
               if (d[1] + elevel[1, i] <= dim(p.true)[1] && # check if candidate dose is within the dose matrix
                   d[2] + elevel[2, i] <= dim(p.true)[2]) {
@@ -712,9 +717,9 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
                 k = which.max(prefer)
                 d = d + c(elevel[1, k], elevel[2, k])
               }else{ ## BLRM to calculate probability
-                print(n)
-                print(y)
-                cat("current dose considered for escalation:", d, "\n")
+                # print(n)
+                # print(y)
+                # cat("current dose considered for escalation:", d, "\n")
                 tested_dose <- translate_cohorts(BLRMspecs$prov_dose1, BLRMspecs$prov_dose2, y, n)
                 BLRMdata <- c(BLRMspecs, tested_dose)
                 blrm_trial <- blrm_combo_ss_local(prior=BLRMspecs$prior, data=BLRMdata, output_excel=FALSE, output_pdf=FALSE)
@@ -722,7 +727,7 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
                 candidate_prob_posterior = blrm_trial$prob_posterior[2, candidate_dose]
                 next.dose <- prov_dose[candidate_dose[which.max(candidate_prob_posterior)],]
                 d = c(which(BLRMspecs$prov_dose1==next.dose$Var1), which(BLRMspecs$prov_dose2==next.dose$Var2))
-                cat("BLRM recommended dose for escalation:", d, "\n")
+                # cat("BLRM recommended dose for escalation:", d, "\n")
               }
               #   if(prefer[1] != prefer[2]){ # one prefered, one low priority
               #   if(max(nn)==0 || min(pr_H0)==max(pr_H0)){ k = which.max(prefer)} # if both have no data or have equal prob, go to the preferred dose
@@ -748,11 +753,13 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
             d = d + c(0,-1)*( preferred.doses[d[1],d[2]-1]>=0)
           }else if (d[1]>1 && d[2] == 1){ # if reach boundary in one direction
             d = d + c(-1,0)*( preferred.doses[d[1]-1,d[2]]>=0)
+          }else if (d[1]==1 && d[2] == 1){ # if reach boundary in both directions
+            d = d
           }else{
             delevel = matrix(c(-1, 0, 0, -1), 2)
             pr_H0 = rep(0, length(delevel)/2)
             nn = yn = pr_H0
-            prefer = rep(0, length(delevel)/2) # to store preference for two candidate dose
+            prefer = rep(-1, length(delevel)/2) # to store preference for two candidate dose
             for (i in seq(1, length(delevel)/2, by = 1)) {
               if (d[1] + delevel[1, i] > 0 && d[2] + delevel[2,
                                                              i] > 0) {
@@ -779,9 +786,9 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
               d = d + c(delevel[1, k], delevel[2, k])
             }else {
               ## BLRM to calculate probability
-                print(n)
-                print(y)
-                cat("current dose considered for de-escalation:", d, "\n")
+                # print(n)
+                # print(y)
+                # cat("current dose considered for de-escalation:", d, "\n")
                 tested_dose <- translate_cohorts(BLRMspecs$prov_dose1, BLRMspecs$prov_dose2, y, n)
                 BLRMdata <- c(BLRMspecs, tested_dose)
                 blrm_trial <- blrm_combo_ss_local(prior=BLRMspecs$prior, data=BLRMdata, output_excel=FALSE, output_pdf=FALSE)
@@ -789,7 +796,7 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
                 candidate_prob_posterior = blrm_trial$prob_posterior[2, candidate_dose]
                 next.dose <- prov_dose[candidate_dose[which.max(candidate_prob_posterior)],]
                 d = c(which(BLRMspecs$prov_dose1==next.dose$Var1), which(BLRMspecs$prov_dose2==next.dose$Var2))
-                cat("BLRM recommended dose for de-escalation:", d, "\n")
+                # cat("BLRM recommended dose for de-escalation:", d, "\n")
               }
               #   if(prefer[1] != prefer[2]){ # one prefered, one low priority
               #   if(max(nn)==0 || min(pr_H0)==max(pr_H0)){ k = which.max(prefer)} # if both have no data or have equal prob, go to the preferred dose
@@ -822,9 +829,11 @@ get.oc.combBB <- function (BLRMspecs, target, p.true, ncohort, cohortsize, prefe
       }else {
         selcomb = select.mtd.comb.boin(target, n, y,
                                        cutoff.eli, extrasafe, offset,
-                                       boundMTD=boundMTD,p.tox=p.tox,mtd.contour = FALSE)$MTD
-        dselect[trial, 1] = selcomb[1]
-        dselect[trial, 2] = selcomb[2]
+                                       boundMTD=boundMTD,p.tox=p.tox,mtd.contour = FALSE)
+        dselect[trial, 1] = selcomb$MTD[1]
+        dselect[trial, 2] = selcomb$MTD[2]
+        # cat("p_est:")
+        # print(selcomb)
       }
 
       # print(n[c(1,4,5,8,9,12)])

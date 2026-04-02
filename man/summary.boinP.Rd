@@ -28,7 +28,7 @@ S1.p.true <- matrix(c(0.02, 0.07, 0.10,
 0.15, 0.30, 0.45,
 0.30, 0.45, 0.55), nrow = 3, byrow = FALSE)
 doses.cp <- matrix(c(1, -1, -1, -1, -1,
-      1, 0,  0, 0, -1,
+      1, 1, 1, 1, -1,
       1, 1, 1, 1, 1),
       ncol = 5, byrow = TRUE)
 oc.comb <- get.oc.combP(target=0.3, p.true=S1.p.true, ncohort=10, cohortsize=3,

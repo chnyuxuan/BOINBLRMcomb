@@ -23,7 +23,9 @@ the trial.}
 
 \item{cohortsize}{the cohort size}
 
-\item{preferred.doses}{the matrix that specifies the preference of each dose combination: 1 for preferred; 0 for less preferred; -1 for excluded.}
+\item{preferred.doses}{the matrix that specifies the admissible dose combinations:
+\code{1} for included dose combinations and \code{-1} for excluded
+dose combinations. The starting dose must be coded as \code{1}.}
 
 \item{n.earlystop}{the early stopping parameter. If the number of patients treated at the current
 dose reaches \code{n.earlystop}, stop the trial or subtrial and select the MTD based on
@@ -66,7 +68,7 @@ probability for the selected MTD must be less than de-escalation boundary.}
 \code{get.oc.combP()} returns the operating characteristics of the BOIN combination or
 waterfall design as a list. For the BOIN combination design, including:
 (1) true toxicity probability at each dose level (\code{$p.true}),
-(2) preference at each dose level (\code{$preferred.doses}),
+(2) admissibility indicator at each dose level (\code{$preferred.doses}),
 (3) selection percentage at each dose level (\code{$selpercent}),
 (4) the number of patients treated at each dose level (\code{$npatients})
 (5) the number of toxicities observed at each dose level (\code{$ntox}),
@@ -89,12 +91,11 @@ starting from \code{startdose}, if no toxicity is observed, we escalate the dose
 otherwise, the titration is completed and we switch to cohort size = \code{cohortsize}.
 Titration accelerates the dose escalation and is useful when low doses are believed to be safe.
 
-When selecting the next dose in escalation/de-escalation, the dose with higher posterior
-probability of being in the optimal interval is selected as the next dose.
-When the posterior probability of the two candidate doses being in the
-optimal interval is equal or both candidate doses have no data, the next
-dose is selected according to the preference matrix. When one candidate dose
-has data, the other has not, the next dose is the candidate dose with no data.
+The dose combinations to be considered are specified by \code{preferred.doses},
+where dose combinations coded as \code{1} are included and dose combinations
+coded as \code{-1} are excluded from escalation and de-escalation. Among the
+admissible neighboring dose combinations, the next dose is chosen based on the
+posterior probability of being in the optimal interval.
 
 
 The BOIN-CombP design has two built-in stopping rules:
