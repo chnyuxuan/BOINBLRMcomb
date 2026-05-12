@@ -2,7 +2,14 @@ Package: BOINcombP
 Type: Package
 Title: Bayesian Optimal INterval Design for Drug-Combination with prespecified Preference(BOIN-CombP) Phase I Clinical Trials
 Version: 0.1.0
-Imports: BOIN, blrm
+Imports:
+    BOIN,
+    boot,
+    doParallel,
+    Iso,
+    parallel,
+    rjags,
+    stats
 Author: Yuxuan Chen, Haiming Zhou, and Philip He
 Maintainer: Yuxuan Chen <yuxuan.chen@daiichisankyo.com>
 Description: The Bayesian optimal interval (BOIN) design framework, a 
@@ -25,4 +32,5 @@ Description: The Bayesian optimal interval (BOIN) design framework, a
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
+SystemRequirements: JAGS
 RoxygenNote: 7.3.2

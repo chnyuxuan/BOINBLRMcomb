@@ -187,10 +187,9 @@
 #'
 #'summary(oc.comb)
 #'
-#' @import BOIN
+#' @importFrom BOIN get.boundary
 #' @import stats
 #' @import blrm
-#' @import coda
 #' @export
 
 

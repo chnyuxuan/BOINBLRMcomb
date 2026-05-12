@@ -187,10 +187,11 @@
 #'
 #'summary(oc.comb)
 #'
+#' @importFrom BOIN get.boundary
 #' @importFrom parallel detectCores makeCluster parLapply stopCluster
-#' @import BOIN
 #' @import stats
 #' @import blrm
+#' @import coda
 #' @export
 
 

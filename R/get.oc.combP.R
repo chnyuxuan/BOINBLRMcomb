@@ -140,7 +140,7 @@
 #'
 #'
 #'
-#' @import BOIN
+#' @importFrom BOIN get.boundary
 #' @import stats
 #' @export
 

@@ -29,7 +29,6 @@
 #' summary(oc.comb)
 #'
 #'
-#' @import BOIN
 #' @export
 
 summary.boinP<- function (object, ...)
